@@ -2,7 +2,8 @@ import { hash, compare } from "bcryptjs";
 import type { Response } from "express";
 import jwt from "jsonwebtoken";
 import type { Types, QueryFilter } from "mongoose";
-import type { IBook } from "../types/modelTypes.js";
+import type { IBook, IBookFilter } from "../types/modelTypes.js";
+import type { filterQuery, updateBody } from "../validators/vaidationSchema.js";
 
 export async function hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
@@ -35,7 +36,7 @@ export const handleResponse = (res: Response, status: number, message: string, d
     });
 };
 
-export function buildBookFilter(query: any): QueryFilter<IBook>{
+export function buildBookFilter(query: filterQuery): QueryFilter<IBook>{
     const filters: any = {};
     if(query.title) filters.title = new RegExp(query.title, "i");
     if(query.author) filters.title = new RegExp(query.author, "i");
@@ -47,4 +48,14 @@ export function buildBookFilter(query: any): QueryFilter<IBook>{
         if(query.maxCopies) filters.availableCopies.$lte = Number(query.maxCopies);
     }
     return filters;
+}
+
+export function buildBookUpdateFields(body: updateBody): QueryFilter<updateBody>{
+    const UpdateFields: any = {};
+    if(body.title) UpdateFields.title = new RegExp(body.title, "i");
+    if(body.author) UpdateFields.title = new RegExp(body.author, "i");
+    if(body.category) UpdateFields.title = body.category;
+    if(body.issueYear) UpdateFields.title = Number(body.issueYear);
+    if(body.availableCopies) UpdateFields.title = Number(body.issueYear);
+    return UpdateFields;
 }

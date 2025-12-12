@@ -22,3 +22,12 @@ export interface IBook extends Document {
     createdAt: Date;
     updatedAt: Date;
 }
+
+export interface IBookFilter {
+  title?: string;
+  author?: string;
+  category?: string;
+  issueYear?: string;
+  minCopies?: string;
+  maxCopies?: string;
+}
