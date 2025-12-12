@@ -154,7 +154,7 @@ app.delete("/removeBook/:id", checkAuthentication, checkAuthorizationLibrarian, 
     }
 })
 
-app.patch("/updateBook/:id", validateRequest(bookUpdateSchema), async (req: Request, res: Response, next: NextFunction): Promise<void>=> {
+app.patch("/updateBook/:id", checkAuthentication, checkAuthorizationLibrarian, validateRequest(bookUpdateSchema), async (req: Request, res: Response, next: NextFunction): Promise<void>=> {
     try {
         const dataBody = res.locals.validated.body as updateBody;
         const dataParams = res.locals.validated.params as updateParams;

@@ -39,9 +39,9 @@ export const handleResponse = (res: Response, status: number, message: string, d
 export function buildBookFilter(query: filterQuery): QueryFilter<IBook>{
     const filters: any = {};
     if(query.title) filters.title = new RegExp(query.title, "i");
-    if(query.author) filters.title = new RegExp(query.author, "i");
-    if(query.category) filters.title = query.category;
-    if(query.issueYear) filters.title = Number(query.issueYear);
+    if(query.author) filters.author = new RegExp(query.author, "i");
+    if(query.category) filters.category = query.category;
+    if(query.issueYear) filters.issueYear = Number(query.issueYear);
     if(query.minCopies || query.maxCopies){
         filters.availableCopies = {};
         if(query.minCopies) filters.availableCopies.$gte = Number(query.minCopies);
@@ -53,9 +53,9 @@ export function buildBookFilter(query: filterQuery): QueryFilter<IBook>{
 export function buildBookUpdateFields(body: updateBody): QueryFilter<updateBody>{
     const UpdateFields: any = {};
     if(body.title) UpdateFields.title = new RegExp(body.title, "i");
-    if(body.author) UpdateFields.title = new RegExp(body.author, "i");
-    if(body.category) UpdateFields.title = body.category;
-    if(body.issueYear) UpdateFields.title = Number(body.issueYear);
-    if(body.availableCopies) UpdateFields.title = Number(body.issueYear);
+    if(body.author) UpdateFields.author = new RegExp(body.author, "i");
+    if(body.category) UpdateFields.category = body.category;
+    if(body.issueYear) UpdateFields.issueYear = Number(body.issueYear);
+    if(body.availableCopies) UpdateFields.availableCopies = Number(body.issueYear);
     return UpdateFields;
 }
