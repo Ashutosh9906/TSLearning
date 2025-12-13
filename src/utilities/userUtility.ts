@@ -56,6 +56,6 @@ export function buildBookUpdateFields(body: updateBody): QueryFilter<updateBody>
     if(body.author) UpdateFields.author = new RegExp(body.author, "i");
     if(body.category) UpdateFields.category = body.category;
     if(body.issueYear) UpdateFields.issueYear = Number(body.issueYear);
-    if(body.availableCopies) UpdateFields.availableCopies = Number(body.issueYear);
+    if(body.totalCopies) UpdateFields.totalCopies = Number(body.totalCopies);
     return UpdateFields;
 }

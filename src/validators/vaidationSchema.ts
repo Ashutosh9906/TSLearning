@@ -83,6 +83,12 @@ export const bookIdParamsSchema = z.object({
       })
 }).strict();
 
+export const bookIdSchema = z.object({
+  body: z.object({}).optional(),
+  params: bookIdParamsSchema,
+  query: z.object({}).optional(),
+}).strict();
+
 export const bookRemoveSchema = z.object({
   body: z.object({}).optional(),
   params: bookIdParamsSchema,
@@ -94,18 +100,17 @@ export const bookUpdateBodySchema = z.object({
   title: z.string().optional(),
   category: z.string().optional(),
   issueYear: z.number().min(1000, "Invalid IssueYear").optional(),
-  availableCopies: z.number().optional()
+  totalCopies: z.number().optional()
 }).strict();
 
 export const bookUpdateSchema = z.object({
   body: bookUpdateBodySchema,
   params: bookIdParamsSchema,
   query: z.object({}).optional(),
-})
+}).strict();
 
 export type updateBody = z.infer<typeof bookUpdateBodySchema>
-export type updateParams = z.infer<typeof bookIdParamsSchema>
-export type removeParams = z.infer<typeof bookIdParamsSchema>
+export type idParams = z.infer<typeof bookIdParamsSchema>
 export type filterQuery = z.infer<typeof bookFilterQuerySchema>
 export type BookBody = z.infer<typeof bookBodySchema>;
 export type SignUpBody = z.infer<typeof signUpBodySchema>;

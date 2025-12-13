@@ -11,7 +11,7 @@ const URI = process.env.MONGO_URI || "";
 
 import errorHandling from "./middlewares/errorHandler.js";
 import { validateRequest } from "./middlewares/parseBody.js";
-import { bookFilterSchema, bookRemoveSchema, bookSchema, bookUpdateSchema, signInSchema, signUpSchema, type BookBody, type filterQuery, type removeParams, type SignInBody, type SignUpBody, type updateBody, type updateParams } from "./validators/vaidationSchema.js";
+import { bookFilterSchema, bookIdParamsSchema, bookIdSchema, bookRemoveSchema, bookSchema, bookUpdateSchema, signInSchema, signUpSchema, type BookBody, type filterQuery, type idParams, type SignInBody, type SignUpBody, type updateBody } from "./validators/vaidationSchema.js";
 import User from "./models/userModel.js";
 import { buildBookFilter, buildBookUpdateFields, comparePassword, createCookie, handleResponse, hashPassword } from "./utilities/userUtility.js";
 import Book from "./models/bookModel.js";
@@ -98,14 +98,7 @@ app.post("/api/addBook", checkAuthentication, checkAuthorizationLibrarian, valid
             handleResponse(res, 409, "Book already exist");
             return;
         }
-        const book = await Book.create({
-            title: data.title,
-            author: data.author,
-            category: data.category,
-            issueYear: data.issueYear,
-            totalCopies: data.totalCopies,
-            availableCopies: data.totalCopies,
-        })
+        const book = await Book.create(data);
         handleResponse(res, 200, "Book added to library successfully");
         return;
     } catch (error) {
@@ -134,19 +127,33 @@ app.get("/books", validateRequest(bookFilterSchema), async (req: Request, res: R
     }
 })
 
+app.get("/book/:id", validateRequest(bookIdSchema), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const data = res.locals.validated.params as idParams;
+        const book = await Book.findById(data.id).select("-__v, _id, -createdAt -updatedAt -totalCopies");
+        if(!book){
+            handleResponse(res, 404, "Book Not Found");
+            return;
+        }
+        handleResponse(res, 200, "Book Found successfully", book);
+        return;
+    } catch (error) {
+        
+    }
+})
+
 app.delete("/removeBook/:id", checkAuthentication, checkAuthorizationLibrarian, validateRequest(bookRemoveSchema), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const data = res.locals.validated.params as removeParams;
+        const data = res.locals.validated.params as idParams;
         if(Object.keys(data).length === 0) {
             handleResponse(res, 400, "Id not provided");
             return;
         }
-        const book = await Book.findOne(data);
+        const book = await Book.findByIdAndDelete(data.id);
         if(!book){
             handleResponse(res, 404, "Book not found");
             return;
         }
-        await Book.deleteOne(data);
         handleResponse(res, 200, "Book removed successfully");
         return;
     } catch (error) {
@@ -157,18 +164,18 @@ app.delete("/removeBook/:id", checkAuthentication, checkAuthorizationLibrarian, 
 app.patch("/updateBook/:id", checkAuthentication, checkAuthorizationLibrarian, validateRequest(bookUpdateSchema), async (req: Request, res: Response, next: NextFunction): Promise<void>=> {
     try {
         const dataBody = res.locals.validated.body as updateBody;
-        const dataParams = res.locals.validated.params as updateParams;
+        const dataParams = res.locals.validated.params as idParams;
         if(Object.keys(dataBody).length === 0){
             handleResponse(res, 400, "No fields provided to update.");
             return;
         }
-        const book = await Book.findOne(dataParams);
+        const updateFields = buildBookUpdateFields(dataBody);
+        const book = await Book.findByIdAndUpdate(dataParams.id, updateFields);
+        console.log(book);
         if(!book){
             handleResponse(res, 404, "Book not found");
             return;
         }
-        const updateFields = buildBookUpdateFields(dataBody);
-        await Book.updateOne(dataParams, updateFields);
         handleResponse(res, 200, "Book Info Updated Successfully");
         return;
     } catch (error) {
