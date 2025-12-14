@@ -30,7 +30,6 @@ export function createCookie(res: Response, id: string | Types.ObjectId, role: s
 
 export const handleResponse = (res: Response, status: number, message: string, data: any = null): void => {
     res.status(status).json({
-        status,
         message,
         data,
     });

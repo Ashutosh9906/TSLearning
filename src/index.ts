@@ -99,7 +99,23 @@ app.post("/api/addBook", checkAuthentication, checkAuthorizationLibrarian, valid
             return;
         }
         const book = await Book.create(data);
-        handleResponse(res, 200, "Book added to library successfully");
+        const accessLink = `http://localhost:4000/book/${book._id}`
+        handleResponse(res, 201, "Book added to library successfully, you can access it at "+accessLink, book);
+        return;
+    } catch (error) {
+        next(error);
+    }
+})
+
+app.get("/book/:id", validateRequest(bookIdSchema), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const data = res.locals.validated.params as idParams;
+        const book = await Book.findById(data.id).select("-__v -createdAt -updatedAt -totalCopies");
+        if(!book){
+            handleResponse(res, 404, "Book Not Found");
+            return;
+        }
+        handleResponse(res, 200, "Book Found successfully", book);
         return;
     } catch (error) {
         next(error);
@@ -127,20 +143,6 @@ app.get("/books", validateRequest(bookFilterSchema), async (req: Request, res: R
     }
 })
 
-app.get("/book/:id", validateRequest(bookIdSchema), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-        const data = res.locals.validated.params as idParams;
-        const book = await Book.findById(data.id).select("-__v, _id, -createdAt -updatedAt -totalCopies");
-        if(!book){
-            handleResponse(res, 404, "Book Not Found");
-            return;
-        }
-        handleResponse(res, 200, "Book Found successfully", book);
-        return;
-    } catch (error) {
-        
-    }
-})
 
 app.delete("/removeBook/:id", checkAuthentication, checkAuthorizationLibrarian, validateRequest(bookRemoveSchema), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
