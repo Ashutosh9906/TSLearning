@@ -1,4 +1,4 @@
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 export interface IUser extends Document {
     name: string;
@@ -30,4 +30,19 @@ export interface IBookFilter {
   issueYear?: string;
   minCopies?: string;
   maxCopies?: string;
+}
+
+export interface IUserCookie {
+  id: Types.ObjectId,
+  role: "student" | "librarian"
+}
+
+export interface IBorrow extends Document {
+  userId: Types.ObjectId;
+  bookId: Types.ObjectId;
+  borrowedAt: Date;
+  dueAt: Date;
+  returnedAt?: Date | null;
+  status: "borrowed" | "returned" | "overdue";
+  renewalCount: number;
 }

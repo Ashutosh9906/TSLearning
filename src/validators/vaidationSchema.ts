@@ -109,6 +109,20 @@ export const bookUpdateSchema = z.object({
   query: z.object({}).optional(),
 }).strict();
 
+export const bookBorrowBodySchema = z.object({
+  id:z.string()
+      .refine((val) => mongoose.Types.ObjectId.isValid(val), {
+        message: "Invalid mongoose id"
+      }),
+}).strict();
+
+export const bookBorrowSchema = z.object({
+  body: bookBorrowBodySchema,
+  params: z.object({}).optional(),
+  query: z.object({}).optional(),
+}).strict();
+
+export type borrowBook = z.infer<typeof bookBorrowBodySchema>
 export type updateBody = z.infer<typeof bookUpdateBodySchema>
 export type idParams = z.infer<typeof bookIdParamsSchema>
 export type filterQuery = z.infer<typeof bookFilterQuerySchema>
