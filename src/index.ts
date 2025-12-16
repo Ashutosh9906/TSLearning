@@ -18,6 +18,7 @@ import Book from "./models/bookModel.js";
 import { checkAuthentication, checkAuthorizationLibrarian, checkAuthorizationStudent } from "./middlewares/auth.js";
 import type { IUserCookie } from "./types/modelTypes.js";
 import Borrow from "./models/borrowModel.js";
+import { sendEmail } from "./utilities/mailUtility.js";
 
 mongoose.connect(URI)
     .then(() => console.log("MongoDB Connected Successfully"))
@@ -187,12 +188,12 @@ app.patch("/updateBook/:id", checkAuthentication, checkAuthorizationLibrarian, v
     }
 })
 
-app.post("/boorowBook", checkAuthentication, validateRequest(bookBorrowSchema), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+app.post("/borrowBook", checkAuthentication, validateRequest(bookBorrowSchema), async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const data = res.locals.validated.body as borrowBook;
+        const data = new mongoose.Types.ObjectId(res.locals.validated.body.id);
         const userId = new mongoose.Types.ObjectId(res.locals.user.id);
-        const userDetail = await Borrow.find({ userId, status: "borrowed" });
-        if (Object.keys(userDetail).length >= 5) {
+        const userBorrowDetail = await Borrow.find({ userId, status: "borrowed" });
+        if (Object.keys(userBorrowDetail).length >= 5) {
             handleResponse(res, 409, "Hit the limit to borrow Book, Return previous books first");
             return;
         }
@@ -208,10 +209,11 @@ app.post("/boorowBook", checkAuthentication, validateRequest(bookBorrowSchema), 
                 new: true
             }
         );
-        const alreadyBorrowed = await Borrow.findOne({ userId, bookId: data.id });
-        if (alreadyBorrowed) {
-            handleResponse(res, 409, "Book Already Borrowed");
-            return;
+        for(let book of userBorrowDetail){
+            if(book.userId == userId && book.bookId == data){
+                handleResponse(res, 409, "Book already borrowed");
+                return;
+            }
         }
         if (!book) {
             handleResponse(res, 404, "Book Not found");
@@ -219,7 +221,7 @@ app.post("/boorowBook", checkAuthentication, validateRequest(bookBorrowSchema), 
         }
         const borrowDetails = await Borrow.create({
             userId,
-            bookId: data.id,
+            bookId: data,
         })
         handleResponse(res, 200, "Book Borrowes successfully", borrowDetails);
         return;
@@ -232,7 +234,7 @@ app.get("/borrowedBook", checkAuthentication, async (req: Request, res: Response
     try {
         const userId = new mongoose.Types.ObjectId(res.locals.user.id);
         const borrowedData = await Borrow.find({ userId });
-        if(Object.keys(borrowedData).length == 0){
+        if (Object.keys(borrowedData).length == 0) {
             handleResponse(res, 404, "No books borrowed");
             return;
         }
@@ -291,11 +293,11 @@ app.patch("/returnBook/:id", checkAuthentication, validateRequest(bookIdSchema),
             },
             { new: true }
         );
-        if(!returnDetails){
+        if (!returnDetails) {
             handleResponse(res, 404, "Borrow details not found");
             return;
         }
-        await Book.findByIdAndUpdate({_id: bookId}, {
+        await Book.findByIdAndUpdate({ _id: bookId }, {
             $inc: {
                 availableCopies: 1
             }
@@ -313,13 +315,18 @@ app.patch("/returnBook/:id", checkAuthentication, validateRequest(bookIdSchema),
 //     try {
 //         const data = res.locals.validated.body as borrowBook;
 //         const userId = new mongoose.Types.ObjectId(res.locals.user.id);
+//         const userDetail = await Borrow.find({ userId, status: "borrowed" });
+//         if (Object.keys(userDetail).length >= 5) {
+//             handleResponse(res, 409, "Hit the limit to borrow Book, Return previous books first");
+//             return;
+//         }
 //         const book = await Book.findOneAndUpdate(
 //             {
 //                 _id: data.id,
-//                 availableCopies: { $gte: data.borrowCount }
+//                 availableCopies: { $gte: 0 }
 //             },
 //             {
-//                 $inc: { availableCopies: -data.borrowCount }
+//                 $inc: { availableCopies: -1 }
 //             },
 //             {
 //                 new: true,
@@ -345,13 +352,36 @@ app.patch("/returnBook/:id", checkAuthentication, validateRequest(bookIdSchema),
 //     } catch (error) {
 //         await session.abortTransaction();
 //         session.endSession();
-//         if (error instanceof Error && error.message === "INSUFFICIENT_BOOK"){
+//         if (error instanceof Error && error.message === "INSUFFICIENT_BOOK") {
 //             handleResponse(res, 404, "Book Not found");
 //             return;
 //         }
 //         next(error);
 //     }
 // })
+
+
+const router = express.Router();
+
+app.post("/send-mail", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    await sendEmail(
+      email,
+      "Welcome to Our App",
+      "Welcome! Your account is ready.",
+      "<h1>Welcome!</h1><p>Your account is ready.</p>"
+    );
+
+    res.status(200).json({ message: "Email sent successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to send email" });
+  }
+});
+
+export default router;
+
 
 app.listen(PORT, () => {
     console.log(`Server started on PORT : ${PORT}`);
