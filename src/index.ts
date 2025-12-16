@@ -19,6 +19,7 @@ import { checkAuthentication, checkAuthorizationLibrarian, checkAuthorizationStu
 import type { IUserCookie } from "./types/modelTypes.js";
 import Borrow from "./models/borrowModel.js";
 import { sendEmail } from "./utilities/mailUtility.js";
+import { emailQueue } from "./queues/emailQueues.js";
 
 mongoose.connect(URI)
     .then(() => console.log("MongoDB Connected Successfully"))
@@ -209,8 +210,8 @@ app.post("/borrowBook", checkAuthentication, validateRequest(bookBorrowSchema), 
                 new: true
             }
         );
-        for(let book of userBorrowDetail){
-            if(book.userId == userId && book.bookId == data){
+        for (let book of userBorrowDetail) {
+            if (book.userId == userId && book.bookId == data) {
                 handleResponse(res, 409, "Book already borrowed");
                 return;
             }
@@ -364,20 +365,36 @@ app.patch("/returnBook/:id", checkAuthentication, validateRequest(bookIdSchema),
 const router = express.Router();
 
 app.post("/send-mail", async (req, res) => {
-  const { email } = req.body;
+    const { email } = req.body;
 
-  try {
-    await sendEmail(
-      email,
-      "Welcome to Our App",
-      "Welcome! Your account is ready.",
-      "<h1>Welcome!</h1><p>Your account is ready.</p>"
-    );
+    try {
+        // await sendEmail(
+        //     email,
+        //     "Welcome to Our App",
+        //     "Welcome! Your account is ready.",
+        //     "<h1>Welcome!</h1><p>Your account is ready.</p>"
+        // );
 
-    res.status(200).json({ message: "Email sent successfully" });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to send email" });
-  }
+        await emailQueue.add(
+            "send-email",
+            {
+                to: email,
+                subject: "Welcome!",
+                html: "<h1>Welcome to our app</h1>",
+            },
+            {
+                attempts: 3,
+                backoff: {
+                    type: "exponential",
+                    delay: 2000,
+                }
+            });
+        console.log("📨 Email job added to queue"); ``
+
+        res.status(200).json({ message: "Email sent successfully" });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to send email" });
+    }
 });
 
 export default router;

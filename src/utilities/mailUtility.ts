@@ -56,7 +56,7 @@ export const sendEmail = async (to: string, subject: string, text?: string, html
 
         const result = await transporter.sendMail(mailOptions);
         if(result.accepted.length > 0){
-            console.log('✅ Email Sent:', result.messageId);
+            // console.log('✅ Email Sent:', result.messageId);
         }
         if(result.rejected.length > 0){
             console.log("❌ Email Rejected:", result.messageId);
