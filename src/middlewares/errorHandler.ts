@@ -5,7 +5,7 @@ interface AppError extends Error {
 }
 
 const errorHandling: ErrorRequestHandler = (err: AppError, req: Request, res: Response, next: NextFunction): void => {
-    console.log(err.stack);
+    console.log(err);
     res.status(500).json({
         status: 500,
         message: "Internal Server Error",

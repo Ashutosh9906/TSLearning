@@ -1,8 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
 import mongoose from "mongoose";
 import Borrow from "../models/borrowModel.js";
-import { handleResponse } from "../utilities/userUtility.js";
+import { formatDate, handleResponse } from "../utilities/userUtility.js";
 import Book from "../models/bookModel.js";
+import { emailQueue } from "../queues/emailQueues.js";
+import { bookReturnDetail, borrowDetails, renewBookDetail } from "../templates/borrowTemplates.js"
 
 export const handleBorrowBook = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -15,7 +17,7 @@ export const handleBorrowBook = async (req: Request, res: Response, next: NextFu
         }
         const book = await Book.findOneAndUpdate(
             {
-                _id: data.id,
+                _id: data,
                 availableCopies: { $gte: 0 }
             },
             {
@@ -35,11 +37,40 @@ export const handleBorrowBook = async (req: Request, res: Response, next: NextFu
             handleResponse(res, 404, "Book Not found");
             return;
         }
-        const borrowDetails = await Borrow.create({
+        const borrowBookDetails = await Borrow.create({
             userId,
             bookId: data,
-        })
-        handleResponse(res, 200, "Book Borrowes successfully", borrowDetails);
+        });
+        const populatedBorrow = await Borrow.findById(borrowBookDetails._id)
+            .populate("userId", "name email")
+            .populate("bookId", "title")
+            .lean<{
+                userId: { name: string; email: string };
+                bookId: { title: string };
+            }>();
+        if (!populatedBorrow) {
+            handleResponse(res, 404, "Borrow Details not found");
+            return;
+        }
+        const issueDate = formatDate(borrowBookDetails.borrowedAt);
+        const returnDate = formatDate(borrowBookDetails.dueAt);
+        await emailQueue.add(
+            "send-email",
+            {
+                to: populatedBorrow.userId.email,
+                subject: "Welcome!",
+                html: borrowDetails(populatedBorrow.userId.name, populatedBorrow.bookId.title, issueDate, returnDate).html,
+            },
+            {
+                attempts: 3,
+                backoff: {
+                    type: "exponential",
+                    delay: 2000,
+                }
+            });
+        console.log("📨 Email job added to queue");
+
+        handleResponse(res, 200, "Book Borrowes successfully", borrowBookDetails);
         return;
     } catch (error) {
         next(error);
@@ -84,6 +115,37 @@ export const handleRenewBorrowedBook = async (req: Request, res: Response, next:
             handleResponse(res, 404, "Book cannot be renewed");
             return
         }
+        const populatedBorrow = await Borrow.findById(updatedBorrow._id)
+            .populate("userId", "name email")
+            .populate("bookId", "title")
+            .lean<{
+                userId: { name: string; email: string };
+                bookId: { title: string };
+            }>();
+        if (!populatedBorrow) {
+            handleResponse(res, 404, "Borrow Details not found");
+            return;
+        }
+
+        const issueDate = formatDate(updatedBorrow.borrowedAt);
+        const renewDate = formatDate(updatedBorrow.updatedAt ?? new Date());
+        const returnDate = formatDate(updatedBorrow.dueAt);
+        await emailQueue.add(
+            "send-email",
+            {
+                to: populatedBorrow.userId.email,
+                subject: "Welcome!",
+                html: renewBookDetail(populatedBorrow.userId.name, populatedBorrow.bookId.title, issueDate, renewDate, returnDate).html,
+            },
+            {
+                attempts: 3,
+                backoff: {
+                    type: "exponential",
+                    delay: 2000,
+                }
+            });
+        console.log("📨 Email job added to queue"); ``
+
         handleResponse(res, 201, "Book renewd successfullt", updatedBorrow);
         return;
     } catch (error) {
@@ -118,6 +180,34 @@ export const handleReturnBorrowedBook = async (req: Request, res: Response, next
                 availableCopies: 1
             }
         })
+        const populatedBorrow = await Borrow.findById(returnDetails._id)
+            .populate("userId", "name email")
+            .populate("bookId", "title")
+            .lean<{
+                userId: { name: string; email: string };
+                bookId: { title: string };
+            }>();
+        if (!populatedBorrow) {
+            handleResponse(res, 404, "Borrow Details not found");
+            return;
+        }
+
+        const issueDate = formatDate(returnDetails.borrowedAt);
+        const returnDate = formatDate(returnDetails.returnedAt ?? new Date());
+        await emailQueue.add(
+            "send-email",
+            {
+                to: populatedBorrow.userId.email,
+                subject: "Welcome!",
+                html: bookReturnDetail(populatedBorrow.userId.name, populatedBorrow.bookId.title, issueDate, returnDate).html,
+            },
+            {
+                attempts: 3,
+                backoff: {
+                    type: "exponential",
+                    delay: 2000,
+                }
+            });
         handleResponse(res, 200, "Book returned successfully", returnDetails);
     } catch (error) {
         next(error);

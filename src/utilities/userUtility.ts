@@ -16,7 +16,7 @@ export async function comparePassword(userPass: string, hashPass: string): Promi
     return isMatch;
 }
 
-export function createCookie(res: Response, id: string | Types.ObjectId, role: string): void{
+export function createCookie(res: Response, id: string | Types.ObjectId, role: string): void {
     const payload = { id: id.toString(), role };
     const secret = process.env.SECRET ?? "#@TEmp154";
     const token = jwt.sign(payload, secret, { expiresIn: "30m" })
@@ -35,26 +35,37 @@ export const handleResponse = (res: Response, status: number, message: string, d
     });
 };
 
-export function buildBookFilter(query: filterQuery): QueryFilter<IBook>{
+export function buildBookFilter(query: filterQuery): QueryFilter<IBook> {
     const filters: any = {};
-    if(query.title) filters.title = new RegExp(query.title, "i");
-    if(query.author) filters.author = new RegExp(query.author, "i");
-    if(query.category) filters.category = query.category;
-    if(query.issueYear) filters.issueYear = Number(query.issueYear);
-    if(query.minCopies || query.maxCopies){
+    if (query.title) filters.title = new RegExp(query.title, "i");
+    if (query.author) filters.author = new RegExp(query.author, "i");
+    if (query.category) filters.category = query.category;
+    if (query.issueYear) filters.issueYear = Number(query.issueYear);
+    if (query.minCopies || query.maxCopies) {
         filters.availableCopies = {};
-        if(query.minCopies) filters.availableCopies.$gte = Number(query.minCopies);
-        if(query.maxCopies) filters.availableCopies.$lte = Number(query.maxCopies);
+        if (query.minCopies) filters.availableCopies.$gte = Number(query.minCopies);
+        if (query.maxCopies) filters.availableCopies.$lte = Number(query.maxCopies);
     }
     return filters;
 }
 
-export function buildBookUpdateFields(body: updateBody): QueryFilter<updateBody>{
+export function buildBookUpdateFields(body: updateBody): QueryFilter<updateBody> {
     const UpdateFields: any = {};
-    if(body.title) UpdateFields.title = new RegExp(body.title, "i");
-    if(body.author) UpdateFields.author = new RegExp(body.author, "i");
-    if(body.category) UpdateFields.category = body.category;
-    if(body.issueYear) UpdateFields.issueYear = Number(body.issueYear);
-    if(body.totalCopies) UpdateFields.totalCopies = Number(body.totalCopies);
+    if (body.title) UpdateFields.title = new RegExp(body.title, "i");
+    if (body.author) UpdateFields.author = new RegExp(body.author, "i");
+    if (body.category) UpdateFields.category = body.category;
+    if (body.issueYear) UpdateFields.issueYear = Number(body.issueYear);
+    if (body.totalCopies) UpdateFields.totalCopies = Number(body.totalCopies);
     return UpdateFields;
 }
+
+export const formatDate = (oldDate: Date): string => {
+    return oldDate.toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+    });
+};

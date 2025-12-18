@@ -7,9 +7,9 @@ import { handleAddBook, handleGetBookByFilters, handleGetBookById, handleRemoveB
 const router = Router();
 
 router.post("/", checkAuthentication, checkAuthorizationLibrarian, validateRequest(bookSchema), handleAddBook);
-router.get("/", validateRequest(bookIdSchema), handleGetBookByFilters);
-router.get("/:id", validateRequest(bookFilterSchema), handleGetBookById);
-router.patch("/:id", checkAuthentication, checkAuthorizationLibrarian, validateRequest(bookRemoveSchema), handleRemoveBook);
+router.get("/", validateRequest(bookFilterSchema), handleGetBookByFilters);
+router.get("/:id", validateRequest(bookIdSchema), handleGetBookById);
+router.delete("/:id", checkAuthentication, checkAuthorizationLibrarian, validateRequest(bookRemoveSchema), handleRemoveBook);
 router.patch("/:id", checkAuthentication, checkAuthorizationLibrarian, validateRequest(bookUpdateSchema), handleUpdateBook);
 
 export default router;

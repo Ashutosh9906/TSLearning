@@ -16,6 +16,7 @@ import { emailQueue } from "./queues/emailQueues.js";
 import userRoutes from "./routes/userRoutes.js";
 import bookRoutes from "./routes/bookRoutes.js";
 import borrowRoutes from "./routes/borrorRoutes.js"
+import { borrowDetails } from "./templates/borrowTemplates.js";
 
 // Database connection
 mongoose.connect(URI)
@@ -28,7 +29,6 @@ mongoose.connect(URI)
 // Middlewares
 app.use(cookieParser());
 app.use(express.json());
-app.use(errorHandling);
 
 // App Routes
 app.use("/api/auth", userRoutes);
@@ -39,21 +39,21 @@ const router = express.Router();
 
 app.post("/send-mail", async (req, res) => {
     const { email } = req.body;
-
+    
     try {
         // await sendEmail(
-        //     email,
-        //     "Welcome to Our App",
-        //     "Welcome! Your account is ready.",
-        //     "<h1>Welcome!</h1><p>Your account is ready.</p>"
-        // );
-
+            //     email,
+            //     "Welcome to Our App",
+            //     "Welcome! Your account is ready.",
+            //     "<h1>Welcome!</h1><p>Your account is ready.</p>"
+            // );
+            
         await emailQueue.add(
             "send-email",
             {
                 to: email,
                 subject: "Welcome!",
-                html: "<h1>Welcome to our app</h1>",
+                html: borrowDetails("Ashutosh", "wings on fire", "18/12/2025", "18/13/2025").html,
             },
             {
                 attempts: 3,
@@ -62,14 +62,15 @@ app.post("/send-mail", async (req, res) => {
                     delay: 2000,
                 }
             });
-        console.log("📨 Email job added to queue"); ``
-
-        res.status(200).json({ message: "Email sent successfully" });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to send email" });
-    }
-});
-
+            console.log("📨 Email job added to queue"); ``
+            
+            res.status(200).json({ message: "Email sent successfully" });
+        } catch (err) {
+            res.status(500).json({ error: "Failed to send email" });
+        }
+    });
+    
+    app.use(errorHandling);
 // Starting on the server
 app.listen(PORT, () => {
     console.log(`Server started on PORT : ${PORT}`);

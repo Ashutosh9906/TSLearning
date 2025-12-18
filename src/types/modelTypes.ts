@@ -45,4 +45,6 @@ export interface IBorrow extends Document {
   returnedAt?: Date | null;
   status: "borrowed" | "returned" | "overdue";
   renewalCount: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
